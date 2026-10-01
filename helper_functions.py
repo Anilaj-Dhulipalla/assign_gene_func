@@ -1,3 +1,5 @@
+import numpy as np 
+
 def global_alignment(seq1, seq2, scoring_function):
     """Global sequence alignment using the Needleman–Wunsch algorithm.
 
@@ -28,6 +30,16 @@ def global_alignment(seq1, seq2, scoring_function):
     Other alignments are not possible.
 
     """
+
+    m, n = len(seq1), len(seq2)
+
+    # Initialise DP table (score matrix) and Traceback matrix
+    dp = np.zeros((m + 1, n + 1))
+    traceback = np.zeros((m + 1, n + 1), dtype=int)
+
+    # Calculate gap penatlies, assuming uniform linear gap penalty from scorin function('-', 'A')
+    gap_penalty_seq1 = scoring_function("-", seq2[0]) if n > 0 else -1
+    gap_penalty_seq2 = scoring_function(seq1[0], "-") if m > 0 else -1
     raise NotImplementedError()
 
 
