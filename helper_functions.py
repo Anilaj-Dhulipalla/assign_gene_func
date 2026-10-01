@@ -1,4 +1,5 @@
-import numpy as np 
+import numpy as np
+from Bio.Align import substitution_matrices
 
 def global_alignment(seq1, seq2, scoring_function):
     """Global sequence alignment using the Needleman–Wunsch algorithm.
@@ -40,7 +41,65 @@ def global_alignment(seq1, seq2, scoring_function):
     # Calculate gap penatlies, assuming uniform linear gap penalty from scorin function('-', 'A')
     gap_penalty_seq1 = scoring_function("-", seq2[0]) if n > 0 else -1
     gap_penalty_seq2 = scoring_function(seq1[0], "-") if m > 0 else -1
-    raise NotImplementedError()
+
+
+    # Fill base cases (edges) 
+    for i in range(1, m + 1):
+        dp[i][0] = dp[i-1][0] + gap_penalty_seq2
+        traceback[i][0] = 2
+    
+    for j in range(1, n + 1):
+        dp[0][j] = dp[0][j - 1] + gap_penalty_seq1
+        traceback[0][j] = 3 
+
+    for i in range(1, m + 1):
+        char1 = seq1[i - 1]
+        for j in range(1, n + 1):
+            char2 = seq2[j - 1]
+
+            match_score = dp[i - 1][j - 1] + scoring_function(char1, char2)
+            delete_score = dp[i - 1][j] + scoring_function(char1, "-")  # Up
+            insert_score = dp[i][j - 1] + scoring_function("-", char2)  # Left
+
+            # Max score selection
+            max_score = max(match_score, delete_score, insert_score)
+            dp[i][j] = max_score
+
+            # Record path for traceback
+            if max_score == match_score:
+                traceback[i][j] = 1  # Diagonal
+            elif max_score == delete_score:
+                traceback[i][j] = 2  # Up
+            else:
+                traceback[i][j] = 3  # Left
+
+    # 3. Traceback from bottom-right (m, n) to top-left (0, 0)
+    aligned_seq1 = []
+    aligned_seq2 = []
+
+    i, j = m, n
+    while i > 0 or j > 0:
+        if traceback[i][j] == 1:  # Diagonal (Match/Mismatch)
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append(seq2[j - 1])
+            i -= 1
+            j -= 1
+        elif traceback[i][j] == 2:  # Up (Gap in seq2)
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append("-")
+            i -= 1
+        elif traceback[i][j] == 3:  # Left (Gap in seq1)
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[j - 1])
+            j -= 1
+
+    # Reverse sequences to restore original order
+    aligned_seq1 = "".join(reversed(aligned_seq1))
+    aligned_seq2 = "".join(reversed(aligned_seq2))
+    final_score = float(dp[m][n])
+
+    return aligned_seq1, aligned_seq2, final_score
+
 
 
 def local_alignment(seq1, seq2, scoring_function):
@@ -80,3 +139,17 @@ def local_alignment(seq1, seq2, scoring_function):
 def scoring_function_simple(aa_i,aa_j):
     score = [-1, 1][aa_i == aa_j]
     return (score)
+
+# Load BLOSUM62 matrix
+blosum62 = substitution_matrices.load("BLOSUM62")
+GAP_PENALTY = -4  
+
+
+def blosum62_scoring(aa1, aa2, gap_penalty=GAP_PENALTY):
+    if aa1 == "-" or aa2 == "-":
+        return gap_penalty
+    try:
+        return blosum62[aa1, aa2]
+    except KeyError:
+        return blosum62.get((aa1, aa2), -4)
+    
