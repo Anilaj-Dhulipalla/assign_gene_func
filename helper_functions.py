@@ -135,7 +135,7 @@ def local_alignment(seq1, seq2, scoring_function):
             up       = H[i-1][j]   + scoring_function(seq1[i-1], "-")
             left     = H[i][j-1]   + scoring_function("-", seq2[j-1])
             
-            # Smith-Waterman rule: clip negative scores to 0.0
+            # Clip negative scores to 0.0
             H[i][j] = max(0.0, diagonal, up, left)
             
             # Map tracking for traceback path
@@ -181,20 +181,6 @@ def local_alignment(seq1, seq2, scoring_function):
 def scoring_function_simple(aa_i,aa_j):
     score = [-1, 1][aa_i == aa_j]
     return (score)
-
-# # Load BLOSUM62 matrix
-# blosum62 = substitution_matrices.load("BLOSUM62")
-# GAP_PENALTY = -4  
-
-
-# def blosum62_scoring(aa1, aa2, gap_penalty=GAP_PENALTY):
-#     if aa1 == "-" or aa2 == "-":
-#         return gap_penalty
-#     try:
-#         return blosum62[aa1, aa2]
-#     except KeyError:
-#         return blosum62.get((aa1, aa2), -4)
-    
 
 # Main to test the examples given in the stubs
 if __name__ == "__main__":
