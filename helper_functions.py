@@ -132,7 +132,63 @@ def local_alignment(seq1, seq2, scoring_function):
     Other alignments are not possible.
 
     """
-    raise NotImplementedError()
+    m, n = len(seq1), len(seq2)
+    
+    # 1. Initialise scoring and tracking matrices
+    H = [[0.0] * (n + 1) for _ in range(m + 1)]
+    trace = [["Stop"] * (n + 1) for _ in range(m + 1)]
+    
+    max_score = 0.0
+    max_i, max_j = 0, 0
+    
+    # 2. Fill matrix
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            # Pass characters dynamically into the scoring_function argument
+            diagonal = H[i-1][j-1] + scoring_function(seq1[i-1], seq2[j-1])
+            up       = H[i-1][j]   + scoring_function(seq1[i-1], "-")
+            left     = H[i][j-1]   + scoring_function("-", seq2[j-1])
+            
+            # Smith-Waterman rule: clip negative scores to 0.0
+            H[i][j] = max(0.0, diagonal, up, left)
+            
+            # Map tracking for traceback path
+            if H[i][j] > 0.0:
+                if H[i][j] == diagonal:
+                    trace[i][j] = "D"
+                elif H[i][j] == up:
+                    trace[i][j] = "U"
+                elif H[i][j] == left:
+                    trace[i][j] = "L"
+            
+            # Track max score position for matrix
+            if H[i][j] > max_score:
+                max_score = H[i][j]
+                max_i, max_j = i, j
+
+    # 3. Traceback
+    align1, align2 = [], []
+    i, j = max_i, max_j
+    
+    # Stop when score is 0
+    while i > 0 and j > 0 and H[i][j] > 0.0 and trace[i][j] != "Stop":
+        if trace[i][j] == "D":
+            align1.append(seq1[i-1])
+            align2.append(seq2[j-1])
+            i -= 1
+            j -= 1
+        elif trace[i][j] == "U":
+            align1.append(seq1[i-1])
+            align2.append("-")
+            i -= 1
+        elif trace[i][j] == "L":
+            align1.append("-")
+            align2.append(seq2[j-1])
+            j -= 1
+
+    return "".join(reversed(align1)), "".join(reversed(align2)), float(max_score)
+
+
 
 
 ## This is an example scoring function, you should implement a version which uses a scoring matrix 
@@ -153,3 +209,13 @@ def blosum62_scoring(aa1, aa2, gap_penalty=GAP_PENALTY):
     except KeyError:
         return blosum62.get((aa1, aa2), -4)
     
+
+# Main to test the examples given in the stubs
+if __name__ == "__main__":
+    import doctest
+    print("Running doctest evaluation...")
+    result = doctest.testmod()
+    if result.failed == 0:
+        print(" Success! Your code perfectly matches the assignment example requirements.")
+    else:
+        print(f" Fail: {result.failed} mismatches detected.")
